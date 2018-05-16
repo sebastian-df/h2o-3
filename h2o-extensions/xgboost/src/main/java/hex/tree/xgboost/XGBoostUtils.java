@@ -77,7 +77,14 @@ public class XGBoostUtils {
             chunks = VecUtils.getLocalChunkIds(f.anyVec());
         }
         final Vec weightVector = f.vec(weight);
-        int nRows = sumChunksLength(chunks, vec, weightVector);
+        final int nRows;
+        if(weight != null){
+            final ChunkZeroCounter chunkZeroCounter = new ChunkZeroCounter(weightVector, chunks);
+            H2O.submitTask(new LocalMR(chunkZeroCounter, chunks.length)).join();
+            nRows = chunkZeroCounter._chunkLen;
+        } else {
+            nRows = sumChunksLength(chunks, vec);
+        }
 
         final DataInfo di = dataInfoKey.get();
         final DMatrix trainMat;
@@ -158,34 +165,24 @@ public class XGBoostUtils {
      *
      * @param chunkIds Chunk identifier of a vector
      * @param vec      Vector containing given chunk identifiers
-     * @param weightsVector Vector with row weights, possibly null
      * @return A sum of chunk lengths. Possibly zero, if there are no chunks or the chunks are empty.
      */
-    private static int sumChunksLength(int[] chunkIds, Vec vec, Vec weightsVector) {
+    private static int sumChunksLength(int[] chunkIds, Vec vec) {
       int totalChunkLength = 0;
-      final int zerosInWeightsVec;
-      if (weightsVector != null) {
-          ChunkZeroCounter chunkZeroCounter = new ChunkZeroCounter(weightsVector, chunkIds);
-          H2O.submitTask(new LocalMR(chunkZeroCounter, chunkIds.length)).join();
-          zerosInWeightsVec = chunkZeroCounter._zeroCount;
-      } else {
-        zerosInWeightsVec = 0;
-      }
 
       for (int chunk : chunkIds) {
             totalChunkLength += vec.chunkLen(chunk);
         }
-      return totalChunkLength - zerosInWeightsVec;
+      return totalChunkLength;
     }
 
   /**
    * Counts zero-valued elements on a chunk
    */
   static class ChunkZeroCounter extends MrFun<ChunkZeroCounter> {
-      int _zeroCount = 0;
+      int _chunkLen = 0;
       final int[] localChunkIDs;
       final Chunk[] chunks;
-
       public ChunkZeroCounter(final Vec weightsVector, final int[] localChunkIDs) {
           this.localChunkIDs = localChunkIDs;
 
@@ -198,19 +195,20 @@ public class XGBoostUtils {
       @Override
       protected void map(int tid) {
           Chunk c = chunks[tid];
+          _chunkLen = c._len;
         // First element can not be iterated by c.nextNz method
-        if (c.atd(0) == 0) _zeroCount++;
+        if (c.atd(0) == 0) _chunkLen--;
         int nzIndex = 0;
         do {
             nzIndex = c.nextNZ(nzIndex, true);
             if(nzIndex < 0 || nzIndex >= c._len) break;
-            if (nzIndex < c._len && c.atd(nzIndex) == 0) _zeroCount++;
+            if (c.atd(nzIndex) == 0) _chunkLen--;
         } while (true);
       }
 
       @Override
       public void reduce(ChunkZeroCounter mrt) {
-          this._zeroCount += mrt._zeroCount;
+          this._chunkLen += mrt._chunkLen;
     }
   }
 
