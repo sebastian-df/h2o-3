@@ -4,6 +4,7 @@ import au.com.bytecode.opencsv.CSVReader;
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.prediction.*;
@@ -28,6 +29,7 @@ public class PredictCsv {
   private boolean useDecimalOutput = false;
   public char separator = ',';   // separator used to delimite input datasets
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
+  public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
   // Model instance
   private EasyPredictModelWrapper model;
 
@@ -77,12 +79,26 @@ public class PredictCsv {
     return useDecimalOutput? Double.toString(d) : Double.toHexString(d);
   }
 
+  private void writeTreePathNames(BufferedWriter output) throws Exception {
+    String[] columnNames = ((SharedTreeMojoModel) model.m).getDecisionPathNames();
+    int index = 0;
+    int lastIndex = columnNames.length-1;
+    for (String s:columnNames) {
+      output.write(s);
+      if (index <lastIndex)
+        output.write(",");
+    }
+  }
+
+
   private void run() throws Exception {
     ModelCategory category = model.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
     int lastCommaAutoEn = -1; // for deeplearning model in autoencoder mode
 
+    if ( getTreePath && !(model.m instanceof SharedTreeMojoModel))
+      throw new Exception("You can only use --leafNodeAssignment with DRF or GBM models. ");
     // Emit outputCSV column names.
     switch (category) {
       case AutoEncoder:
@@ -123,6 +139,17 @@ public class PredictCsv {
         break;
       case Binomial:
       case Multinomial:
+        if (getTreePath) {
+          writeTreePathNames(output);
+        } else {
+          output.write("predict");
+          String[] responseDomainValues = model.getResponseDomainValues();
+          for (String s : responseDomainValues) {
+            output.write(",");
+            output.write(s);
+          }
+        }
+        break;
       case Ordinal:
         output.write("predict");
         String[] responseDomainValues = model.getResponseDomainValues();
@@ -137,7 +164,11 @@ public class PredictCsv {
         break;
 
       case Regression:
-        output.write("predict");
+        if (getTreePath) {
+          writeTreePathNames(output);
+        } else
+          output.write("predict");
+
         break;
 
       default:
@@ -221,8 +252,10 @@ public class PredictCsv {
           }
 
           case Regression: {
-            RegressionModelPrediction p = model.predictRegression(row);
-            output.write(myDoubleToString(p.value));
+
+              RegressionModelPrediction p = model.predictRegression(row);
+              output.write(myDoubleToString(p.value));
+
             break;
           }
 
@@ -245,7 +278,6 @@ public class PredictCsv {
       reader.close();
     }
   }
-
 
   private void loadModel(String modelName) throws Exception {
     try {
@@ -278,6 +310,8 @@ public class PredictCsv {
     System.out.println("     --separator Separator to be used in input file containing test data set.");
     System.out.println("     --decimal Use decimal numbers in the output (default is to use hexademical).");
     System.out.println("     --setConvertInvalidNum Will call .setConvertInvalidNumbersToNa(true) when loading models.");
+    System.out.println("     --leafNodeAssignment will show the leaf node assignment for GBM and DRF instead of the" +
+            " prediction results");
     System.out.println("");
     System.exit(1);
   }
@@ -293,6 +327,8 @@ public class PredictCsv {
           useDecimalOutput = true;
         else if (s.equals("--setConvertInvalidNum"))
           setInvNumNA=true;
+        else if (s.equals("--leafNodeAssignment"))
+          getTreePath = true;
         else {
           i++;
           if (i >= args.length) usage();
