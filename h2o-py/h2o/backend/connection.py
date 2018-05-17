@@ -552,7 +552,11 @@ class H2OConnection(backwards_compatible()):
         """
         if messages is None:
             messages = ("Connecting to H2O server at {url}..", "successful.", "failed.")
-        self._print(messages[0].format(url=self._base_url), end="")
+        message_title = messages[0].format(url=self._base_url)
+        message_success = messages[1]
+        message_failed = messages[2]
+        self._print(message_title, end="")
+        logger.info(message_title)
         cld = None
         errors = []
         for _ in range(max_retries):
@@ -562,7 +566,8 @@ class H2OConnection(backwards_compatible()):
             try:
                 cld = self.request("GET /3/Cloud")
                 if cld.consensus and cld.cloud_healthy:
-                    self._print(" " + messages[1])
+                    self._print(" " + message_success)
+                    logger.info("%s %s", message_title, message_success)
                     return cld
                 else:
                     if cld.consensus and not cld.cloud_healthy:
@@ -581,7 +586,8 @@ class H2OConnection(backwards_compatible()):
             # Cloud too small, or voting in progress, or server is not up yet; sleep then try again
             time.sleep(0.2)
 
-        self._print(" " + messages[2])
+        self._print(" " + message_failed)
+        logger.info("%s %s", message_title, message_failed)
         if cld and not cld.cloud_healthy:
             raise H2OServerError("Cluster reports unhealthy status")
         if cld and not cld.consensus:
@@ -744,6 +750,7 @@ class H2OConnection(backwards_compatible()):
         """Helper function to print connection status messages when in verbose mode."""
         if self._verbose:
             # TODO: LOGGING connection.H2OConnection._print this is for printing server messages, what to do with that?
+            # TODO: It's used only for printing animated dots when checking connection... is it worth it?
             print2(msg, end=end, flush=flush)
 
 

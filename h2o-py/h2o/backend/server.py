@@ -120,13 +120,11 @@ class H2OLocalServer(object):
             hs._tempdir = hs._ice_root
 
         if verbose: 
-            # TODO: LOGGING verbose differentiation
-            logger.debug("Attempting to start a local H2O server...")
+            logger.info("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size)
         if verbose: 
-            # TODO: LOGGING verbose differentiation
-            logger.debug("  Server is running at %s://%s:%d", hs.scheme, hs.ip, hs.port)
+            logger.info("  Server is running at %s://%s:%d", hs.scheme, hs.ip, hs.port)
         atexit.register(lambda: hs.shutdown())
         return hs
 
@@ -153,8 +151,7 @@ class H2OLocalServer(object):
                 self._process.kill()
                 time.sleep(0.2)
             if self._verbose:
-                # TODO: LOGGING verbose differentiation
-                logger.debug("Local H2O server %s:%s stopped.", self.ip, self.port)
+                logger.info("Local H2O server %s:%s stopped.", self.ip, self.port)
         except:
             pass
         self._process = None
@@ -258,9 +255,8 @@ class H2OLocalServer(object):
         self._check_java(java, self._verbose)
 
         if self._verbose:
-            # TODO: LOGGING verbose differentiation
-            logger.debug("  Starting server from " + self._jar_path)
-            logger.debug("  Ice root: " + self._ice_root)
+            logger.info("  Starting server from " + self._jar_path)
+            logger.info("  Ice root: " + self._ice_root)
 
         # Combine jar path with the optional extra classpath
         classpath = [self._jar_path] if self._extra_classpath is None else [self._jar_path] + self._extra_classpath
@@ -297,9 +293,8 @@ class H2OLocalServer(object):
         out = open(self._stdout, "w")
         err = open(self._stderr, "w")
         if self._verbose:
-            # TODO: LOGGING verbose differentiation
-            logger.debug("  JVM stdout: %s", out.name)
-            logger.debug("  JVM stderr: %s", err.name)
+            logger.info("  JVM stdout: %s", out.name)
+            logger.info("  JVM stderr: %s", err.name)
 
         # Launch the process
         win32 = sys.platform == "win32"
@@ -333,9 +328,8 @@ class H2OLocalServer(object):
         jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
         jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
         if verbose:
-            # TODO: LOGGING verbose differentiation
             jver_to_print = jver.strip().replace("\n", "; ")
-            logger.debug("  Java Version: %s", jver_to_print)
+            logger.info("  Java Version: %s", jver_to_print)
         if "GNU libgcj" in jver:
             raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
                                   "Please download the latest 64-bit Java SE JDK from Oracle.")

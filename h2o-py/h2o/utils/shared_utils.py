@@ -9,6 +9,7 @@ This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import sys
 import imp
 import itertools
 import os
@@ -332,10 +333,8 @@ def print2(msg, flush=False, end="\n"):
     function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
     ignores the "bysource" member-order option.
     """
-    # TODO: LOGGING shared_utils.print2 - to log or to print?
-#     print(msg, end=end)
-#     if flush: sys.stdout.flush()
-    logger.info(msg)
+    print(msg, end=end)
+    if flush: sys.stdout.flush()
 
 
 def normalize_slice(s, total):
