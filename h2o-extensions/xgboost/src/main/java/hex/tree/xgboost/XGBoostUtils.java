@@ -176,40 +176,39 @@ public class XGBoostUtils {
       return totalChunkLength;
     }
 
-  /**
-   * Counts length of local chunks, while omitting rows with zero weight
-   */
-  static class LocalChunkLengthCounter extends MrFun<LocalChunkLengthCounter> {
-      private int _chunkLen = 0;
-      final int[] localChunkIDs;
-      private final Vec weightsVector;
+    /**
+     * Counts length of local chunks, while omitting rows with zero weight
+     */
+    static class LocalChunkLengthCounter extends MrFun<LocalChunkLengthCounter> {
+        private int _chunkLen = 0;
+        final int[] _localChunkIDs;
+        private final Vec _weightsVector;
 
-      public LocalChunkLengthCounter(final Vec weightsVector, final int[] localChunkIDs) {
-          this.weightsVector = weightsVector;
-          this.localChunkIDs = localChunkIDs;
+        public LocalChunkLengthCounter(final Vec weightsVector, final int[] localChunkIDs) {
+            _weightsVector = weightsVector;
+            _localChunkIDs = localChunkIDs;
+        }
+
+        @Override
+        protected void map(final int tid) {
+            final Chunk chunk = _weightsVector.chunkForChunkIdx(tid);
+
+            _chunkLen = chunk._len;
+            // First element can not be iterated by c.nextNz method
+            if (chunk.atd(0) == 0) _chunkLen--;
+            int nzIndex = 0;
+            do {
+                nzIndex = chunk.nextNZ(nzIndex, true);
+                if (nzIndex < 0 || nzIndex >= chunk._len) break;
+                if (chunk.atd(nzIndex) == 0) _chunkLen--;
+            } while (true);
+        }
+
+        @Override
+        public void reduce(LocalChunkLengthCounter mrt) {
+            this._chunkLen += mrt._chunkLen;
+        }
     }
-
-      @Override
-      protected void map(final int tid) {
-          Chunk chunk = weightsVector.chunkForChunkIdx(tid);
-          if (chunk == null) return;
-
-          _chunkLen = chunk._len;
-        // First element can not be iterated by c.nextNz method
-        if (chunk.atd(0) == 0) _chunkLen--;
-        int nzIndex = 0;
-        do {
-            nzIndex = chunk.nextNZ(nzIndex, true);
-            if(nzIndex < 0 || nzIndex >= chunk._len) break;
-            if (chunk.atd(nzIndex) == 0) _chunkLen--;
-        } while (true);
-      }
-
-      @Override
-      public void reduce(LocalChunkLengthCounter mrt) {
-          this._chunkLen += mrt._chunkLen;
-    }
-  }
 
     private static int setResponseAndWeight(Chunk[] chunks, int respIdx, int weightIdx, float[] resp, float[] weights, int j, int i) {
         if (weightIdx != -1) {
