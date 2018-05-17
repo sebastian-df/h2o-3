@@ -14,7 +14,6 @@ from h2o.exceptions import H2OJobCancelled, H2OResponseError
 from h2o.utils.progressbar import ProgressBar
 from h2o.utils.shared_utils import clamp
 from datetime import datetime
-import time
 
 class H2OJob(object):
     """A class representing an H2O Job."""
@@ -108,6 +107,7 @@ class H2OJob(object):
         return self.progress
 
     def _print_verbose_info(self):
+        # TODO: LOGGING find H2OJob._print_verbose_info calls and find out if it should log or print
         try:
             model = h2o.get_model(self.job['dest']['name'])
             print("\nScoring History for Model " + str(model.model_id) + " at " + str(datetime.now()))

@@ -3,7 +3,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import traceback
-import warnings
 
 import h2o
 from h2o.exceptions import H2OValueError
@@ -14,6 +13,8 @@ from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies
 
+from logging import getLogger
+logger = getLogger(__name__)
 
 class ModelBase(backwards_compatible()):
     """Base class for all models."""
@@ -282,7 +283,7 @@ class ModelBase(backwards_compatible()):
             if not isinstance(test_data, h2o.H2OFrame):
                 raise ValueError("`test_data` must be of type H2OFrame.  Got: " + type(test_data))
             if (self._model_json["response_column_name"] != None) and not(self._model_json["response_column_name"] in test_data.names):
-                print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+                logger.error("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
                 return
             res = h2o.api("POST /3/ModelMetrics/models/%s/frames/%s" % (self.model_id, test_data.frame_id))
 
@@ -302,9 +303,12 @@ class ModelBase(backwards_compatible()):
         :returns: The score history as an H2OTwoDimTable or a Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if "scoring_history" in model and model["scoring_history"] is not None:
-            return model["scoring_history"].as_data_frame()
-        print("No score history for this model")
+        scoring_history = model.get("scoring_history")
+        if scoring_history is None:
+            logger.warn("No score history for this model")
+            return
+        else:
+            return scoring_history.as_data_frame()
 
 
     def cross_validation_metrics_summary(self):
@@ -314,29 +318,32 @@ class ModelBase(backwards_compatible()):
         :returns: The cross-validation metrics summary as an H2OTwoDimTable
         """
         model = self._model_json["output"]
-        if "cross_validation_metrics_summary" in model and model["cross_validation_metrics_summary"] is not None:
-            return model["cross_validation_metrics_summary"]
-        print("No cross-validation metrics summary for this model")
+        cross_validation_metrics_summary = model.get("cross_validation_metrics_summary")
+        if cross_validation_metrics_summary is None:
+            logger.warn("No cross-validation metrics summary for this model")
+        return cross_validation_metrics_summary
 
 
     def summary(self):
         """Print a detailed summary of the model."""
         model = self._model_json["output"]
-        if "model_summary" in model and model["model_summary"] is not None:
-            return model["model_summary"]
-        print("No model summary for this model")
+        model_summary = model.get("model_summary")
+        if model_summary is None:
+            logger.warn("No model summary for this model")
+        return model_summary
 
 
     def show(self):
         """Print innards of model, without regards to type."""
+        # TODO: LOGGING ModelBase.show log or print?
         if self._future:
             self._job.poll_once()
             return
         if self._model_json is None:
-            print("No model trained yet")
+            logger.warn("No model trained yet")
             return
         if self.model_id is None:
-            print("This H2OEstimator has been removed.")
+            logger.warn("This H2OEstimator has been removed.")
             return
         model = self._model_json["output"]
         print("Model Details")
@@ -382,7 +389,7 @@ class ModelBase(backwards_compatible()):
             else:
                 return vals
         else:
-            print("Warning: This model doesn't have variable importances")
+            logger.warn("Warning: This model doesn't have variable importances")
 
 
     def residual_deviance(self, train=False, valid=False, xval=None):
@@ -467,6 +474,7 @@ class ModelBase(backwards_compatible()):
 
     def pprint_coef(self):
         """Pretty print the coefficents table (includes normalized coefficients)."""
+        # TODO: LOGGING ModelBase.pprint_coef print or log?
         print(self._model_json["output"]["coefficients_table"])  # will return None if no coefs!
 
 
@@ -705,16 +713,25 @@ class ModelBase(backwards_compatible()):
     def metalearner(self):
         """Print the metalearner for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
         model = self._model_json["output"]
-        if "metalearner" in model and model["metalearner"] is not None:
-            return model["metalearner"]
-        print("No metalearner for this model")
+#         if "metalearner" in model and model["metalearner"] is not None:
+#             return model["metalearner"]
+#         print("No metalearner for this model")
+        metalearner = model.get("metalearner")
+        if metalearner is None:
+            logger.warn("No metalearner for this model")
+        return metalearner
+            
 
     def levelone_frame_id(self):
         """Fetch the levelone_frame_id for the model, if any.  Currently only used by H2OStackedEnsembleEstimator."""
         model = self._model_json["output"]
-        if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
-            return model["levelone_frame_id"]
-        print("No levelone_frame_id for this model")
+#         if "levelone_frame_id" in model and model["levelone_frame_id"] is not None:
+#             return model["levelone_frame_id"]
+#         print("No levelone_frame_id for this model")
+        levelone_frame_id = model.get("levelone_frame_id")
+        if levelone_frame_id is None:
+            logger.warn("No levelone_frame_id for this model")
+        return levelone_frame_id
 
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
@@ -980,7 +997,7 @@ class ModelBase(backwards_compatible()):
         # check if the model is a glm
         if self._model_json["algo"] == "glm":
             # print statement to used std_coef_plot(), and use std_coef_plt instead
-            print("Variable importance does not apply to GLM. Will use std_coef_plot() instead.")
+            logger.warn("Variable importance does not apply to GLM. Will use std_coef_plot() instead.")
             self.std_coef_plot(num_of_features)
             return
 
@@ -1265,5 +1282,5 @@ def _get_matplotlib_pyplot(server):
         import matplotlib.pyplot as plt
         return plt
     except ImportError:
-        print("`matplotlib` library is required for this function!")
+        logger.error("`matplotlib` library is required for this function!")
         return None

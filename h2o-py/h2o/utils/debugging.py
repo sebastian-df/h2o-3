@@ -18,6 +18,9 @@ from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewkeys
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 # Nothing to import; this module's only job is to install an exception hook for debugging.
 __all__ = ()
 
@@ -26,7 +29,8 @@ def get_tb():
 
 def err(msg=""):
     """Helper function for printing to stderr."""
-    print(msg, file=sys.stderr)
+    # TODO: LOGGING debugging.err where it's called?
+    logger.error(msg)
 
 # In case any other module installs its own exception hook, try to play nicely and use that when appropriate
 _prev_except_hook = sys.excepthook
@@ -188,9 +192,9 @@ def _except_hook(exc_type, exc_value, exc_tb):
     tb = exc_tb
     while tb.tb_next:
         tb = tb.tb_next
-    print("[EXCEPTION]", file=sys.stderr)
-    print("  %s: %s" % (exc_value.__class__.__name__, str(exc_value)), file=sys.stderr)
-    print("  at line %d in %s\n" % (tb.tb_lineno, tb.tb_frame.f_code.co_filename), file=sys.stderr)
+    logger.error("[EXCEPTION]")
+    logger.error("  %s: %s", exc_value.__class__.__name__, str(exc_value))
+    logger.error("  at line %d in %s\n", tb.tb_lineno, tb.tb_frame.f_code.co_filename)
 
     # There was a warning in {https://docs.python.org/2/library/sys.html} that storing traceback object in a local
     # variable may cause a circular reference; so we explicitly delete these vars just in case.

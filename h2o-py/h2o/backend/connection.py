@@ -12,7 +12,7 @@ Class for communication with an H2O server.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import atexit
 import os
@@ -38,10 +38,13 @@ from h2o.model.metrics_base import (H2ORegressionModelMetrics, H2OClusteringMode
 
 __all__ = ("H2OConnection", "H2OConnectionConf", )
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
-    print("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.\n"
-          "You can upgrade to the newest version of the module running from the command line\n"
-          "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
+    logger.warn("[WARNING] H2O requires requests module of version 2.10 or newer. You have version %s.")
+    logger.warn("You can upgrade to the newest version of the module running from the command line")
+    logger.warn("    $ pip%s install --upgrade requests", requests.__version__, sys.version_info[0])
 
 class H2OConnectionConf(object):
     """
@@ -432,7 +435,7 @@ class H2OConnection(backwards_compatible()):
                 # If the server gone bad, we don't want to wait forever...
                 if self._timeout is None: self._timeout = 1
                 self.request("DELETE /4/sessions/%s" % self._session_id)
-                self._print("H2O session %s closed." % self._session_id)
+                logger.info("H2O session %s closed." % self._session_id)
             except Exception:
                 pass
             self._session_id = None
@@ -501,14 +504,14 @@ class H2OConnection(backwards_compatible()):
         assert_is_type(dest, None, str, type(sys.stdout))
         if dest is None:
             dest = os.path.join(tempfile.mkdtemp(), "h2o-connection.log")
-        self._print("Now logging all API requests to file %r" % dest)
+        logger.info("Now logging all API requests to file %r" % dest)
         self._is_logging = True
         self._logging_dest = dest
 
     def stop_logging(self):
         """Stop logging API requests."""
         if self._is_logging:
-            self._print("Logging stopped.")
+            logger.info("Logging stopped.")
             self._is_logging = False
 
 
@@ -740,6 +743,7 @@ class H2OConnection(backwards_compatible()):
     def _print(self, msg, flush=False, end="\n"):
         """Helper function to print connection status messages when in verbose mode."""
         if self._verbose:
+            # TODO: LOGGING connection.H2OConnection._print this is for printing server messages, what to do with that?
             print2(msg, end=end, flush=flush)
 
 
@@ -901,6 +905,5 @@ def _deprecated_delete(self, url_suffix, **kwargs):
 
 
 def end_session():
-    """Deprecated, use connection.close() instead."""
-    print("Warning: end_session() is deprecated")
+    logger.warn("Warning: end_session() is deprecated. Use close() instead.")
     __H2OCONN__.close()

@@ -263,6 +263,7 @@ class GroupBy(object):
 
 
     def __repr__(self):
+        # TODO: LOGGING FFS WTF? GroupBy.__repr__ printing instead of returning str :o
         print("GroupBy: ")
         print("  Frame: {}; by={}".format(self._fr.frame_id, str(self._by)))
         print("  Aggregates: {}".format(str(self._aggs.keys())))

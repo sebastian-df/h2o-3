@@ -16,6 +16,9 @@ from h2o.utils.shared_utils import deprecated, quoted
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 
 class H2OGridSearch(backwards_compatible()):
     """
@@ -254,18 +257,24 @@ class H2OGridSearch(backwards_compatible()):
         failure_messages_stacks = ""
         error_index = 0
         if len(grid_json["failure_details"]) > 0:
-            print("Errors/Warnings building gridsearch model\n")
+            logger.warn("Errors/Warnings building gridsearch model")
 # will raise error if no grid model is returned, store error messages here
 
             for error_message in grid_json["failure_details"]:
                 if isinstance(grid_json["failed_params"][error_index], dict):
                     for h_name in grid_json['hyper_names']:
-                        print("Hyper-parameter: {0}, {1}".format(h_name,
-                                                                 grid_json['failed_params'][error_index][h_name]))
+                        logger.warn(
+                            "Hyper-parameter: %s, %s",
+                            h_name,
+                            grid_json['failed_params'][error_index][h_name]
+                        )
 
                 if len(grid_json["failure_stack_traces"]) > error_index:
-                    print("failure_details: {0}\nfailure_stack_traces: "
-                          "{1}\n".format(error_message, grid_json['failure_stack_traces'][error_index]))
+                    logger.warn(
+                        "failure_details: %s\nfailure_stack_traces: %s",
+                          error_message, 
+                          grid_json['failure_stack_traces'][error_index]
+                    )
                     failure_messages_stacks += error_message+'\n'
                 error_index += 1
 
@@ -444,6 +453,7 @@ class H2OGridSearch(backwards_compatible()):
         #  pandas.options.display.max_rows = 20
         #  print pandas.DataFrame(table,columns=self.col_header)
         #  return
+        # TODO: LOGGING What to do with H2OGridSearch.summary?
         print()
         if header:
             print('Grid Summary:')
@@ -456,10 +466,12 @@ class H2OGridSearch(backwards_compatible()):
         hyper_combos = itertools.product(*list(self.hyper_params.values()))
         if not self.models:
             c_values = [[idx + 1, list(val)] for idx, val in enumerate(hyper_combos)]
+            # TODO: LOGGING What to do with H2OGridSearch.show?
             print(H2OTwoDimTable(
                 col_header=['Model', 'Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']'],
                 table_header='Grid Search of Model ' + self.model.__class__.__name__, cell_values=c_values))
         else:
+            # TODO: LOGGING What to do with H2OGridSearch.show?
             print(self.sorted_metric_table())
 
 
@@ -537,6 +549,7 @@ class H2OGridSearch(backwards_compatible()):
     def pprint_coef(self):
         """Pretty print the coefficents table (includes normalized coefficients)."""
         for i, model in enumerate(self.models):
+            # TODO: LOGGING What to do with H2OGridSearch.pprint_coef?
             print('Model', i)
             model.pprint_coef()
             print()
@@ -697,7 +710,9 @@ class H2OGridSearch(backwards_compatible()):
         res = [model.params[h]['actual'][0] if isinstance(model.params[h]['actual'], list)
                else model.params[h]['actual']
                for h in self.hyper_params]
-        if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
+        if display:
+            # TODO: LOGGING H2OGridSearch.get_hyperparams display Hyperparams if parameter display = True, how to handle it?
+            print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return res
 
 
@@ -724,7 +739,9 @@ class H2OGridSearch(backwards_compatible()):
             model_params[param_name] = model.params[param_name]['actual'][0] if \
                 isinstance(model.params[param_name]['actual'], list) else model.params[param_name]['actual']
 
-        if display: print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
+        if display: 
+            # TODO: LOGGING H2OGridSearch.get_hyperparams_dict display Hyperparams if parameter display = True, how to handle it?
+            print('Hyperparameters: [' + ', '.join(list(self.hyper_params.keys())) + ']')
         return model_params
 
 
@@ -735,8 +752,10 @@ class H2OGridSearch(backwards_compatible()):
         :returns: The summary table as an H2OTwoDimTable or a Pandas DataFrame.
         """
         summary = self._grid_json["summary_table"]
-        if summary is not None: return summary.as_data_frame()
-        print("No sorted metric table for this grid search")
+        if summary is not None:
+            return summary.as_data_frame()
+        else:
+            logger.warn("No sorted metric table for this grid search")
 
 
     @staticmethod

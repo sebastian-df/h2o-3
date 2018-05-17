@@ -5,7 +5,7 @@ H2O data frame.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals, print_function
 
 import csv
 import datetime
@@ -17,8 +17,6 @@ import traceback
 import warnings
 from io import StringIO
 from types import FunctionType
-
-import requests
 
 import h2o
 from h2o.display import H2ODisplay
@@ -34,6 +32,9 @@ from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_fra
                                     can_use_pandas, quote, normalize_slice, slice_is_normalized, check_frame_id)
 from h2o.utils.typechecks import (assert_is_type, assert_satisfies, Enum, I, is_type, numeric, numpy_ndarray,
                                   numpy_datetime, pandas_dataframe, pandas_timestamp, scipy_sparse, U)
+
+from logging import getLogger
+logger = getLogger(__name__)
 
 __all__ = ("H2OFrame", )
 
@@ -415,10 +416,10 @@ class H2OFrame(object):
         If called from IPython, displays an html'ized result. Else prints a tabulate'd result.
         """
         if self._ex is None:
-            print("This H2OFrame has been removed.")
+            logger.error("This H2OFrame has been removed.")
             return
         if self.nrows == 0:
-            print("This H2OFrame is empty.")
+            logger.error("This H2OFrame is empty.")
             return
         if not self._ex._cache.is_valid(): self._frame()._ex._cache.fill()
         if H2ODisplay._in_ipy():
@@ -429,6 +430,7 @@ class H2OFrame(object):
                 IPython.display.display_html(self._ex._cache._tabulate("html", False), raw=True)
         else:
             if use_pandas and can_use_pandas():
+                # TODO: LOGGING find frame.show usages and figure out how to handle that
                 print(self.head(rows=rows, cols=cols).as_data_frame(True))  # no keyword fill_cache
             else:
                 s = self.__unicode__()
@@ -436,8 +438,10 @@ class H2OFrame(object):
                 if "IPython" in stk[-3][0]:
                     s = "\n%s" % s
                 try:
+                    # TODO: LOGGING find frame.show usages and figure out how to handle that
                     print(s)
                 except UnicodeEncodeError:
+                    # TODO: LOGGING find frame.show usages and figure out how to handle that
                     print(s.encode("ascii", "replace"))
 
 
@@ -455,6 +459,7 @@ class H2OFrame(object):
                 import IPython.display
                 IPython.display.display_html(self._ex._cache._tabulate("html", True), raw=True)
             else:
+                # TODO: LOGGING find frame.summary usages and figure out how to handle that
                 print(self._ex._cache._tabulate("simple", True))
         else:
             return self._ex._cache._data
@@ -472,6 +477,7 @@ class H2OFrame(object):
         res = h2o.api("GET /3/Frames/%s" % self.frame_id, data={"row_count": 10})["frames"][0]
         self._ex._cache._fill_data(res)
 
+        # TODO: LOGGING find frame.describe usages and figure out how to handle that
         print("Rows:{}".format(self.nrow))
         print("Cols:{}".format(self.ncol))
 
@@ -1253,13 +1259,17 @@ class H2OFrame(object):
         isfactor = self.isfactor()
         numlevels = self.nlevels()
         lvls = self.levels()
+        # TODO: LOGGING find frame.structure usages and figure out how to handle that
         print("H2OFrame: '{}' \nDimensions: {} obs. of {} variables".format(self.frame_id, nr, nc))
         for i in range(nc):
+            # TODO: LOGGING find frame.structure usages and figure out how to handle that
             print("$ {} {}: ".format(cn[i], ' ' * (width - max(0, len(cn[i])))), end=' ')
             if isfactor[i]:
                 nl = numlevels[i]
+                # TODO: LOGGING find frame.structure usages and figure out how to handle that
                 print("Factor w/ {} level(s) {} ".format(nl, '"' + '","'.join(lvls[i]) + '"'), end='\n')
             else:
+                # TODO: LOGGING find frame.structure usages and figure out how to handle that
                 print("num {}".format(" ".join(it[0] if it else "nan" for it in h2o.as_list(self[:10, i], False)[1:])))
 
 
@@ -2508,6 +2518,7 @@ class H2OFrame(object):
                     matplotlib.use("Agg", warn=False)
                 import matplotlib.pyplot as plt
             except ImportError:
+                # TODO: LOGGING find frame.hist usages and figure out how to handle that
                 print("ERROR: matplotlib is required to make the histogram plot. "
                       "Set `plot` to False, if a plot is not desired.")
                 return

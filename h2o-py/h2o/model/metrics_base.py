@@ -14,6 +14,9 @@ from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 
 class MetricsBase(backwards_compatible()):
     """
@@ -51,6 +54,7 @@ class MetricsBase(backwards_compatible()):
 
     def __repr__(self):
         # FIXME !!!  __repr__ should never print anything, but return a string
+        # TODO: LOGGING I definitely agree with that ^^
         self.show()
         return ""
 
@@ -64,8 +68,9 @@ class MetricsBase(backwards_compatible()):
 
     def show(self):
         """Display a short summary of the metrics."""
+        # TODO: LOGGING MetricsBase.show should it print or log?
         if self._metric_json==None:
-            print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
+            logger.warn("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
             return
         metric_type = self._metric_json['__meta']['schema_type']
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsBinomialGLM']
@@ -532,7 +537,7 @@ class H2OBinomialModelMetrics(MetricsBase):
             if server: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
-            print("matplotlib is required for this function!")
+            logger.error("matplotlib is required for this function!")
             return
 
         if type == "roc":
@@ -669,8 +674,8 @@ class H2OBinomialModelMetrics(MetricsBase):
             threshold_diffs = [abs(t - threshold) for t in thresholds]
             closest_idx = threshold_diffs.index(min(threshold_diffs))
             closest_threshold = thresholds[closest_idx]
-            print("Could not find exact threshold {0}; using closest threshold found {1}."
-                  .format(threshold, closest_threshold))
+            logger.warn("Could not find exact threshold %f; using closest threshold found %f.",
+                  threshold, closest_threshold)
             return closest_idx
         raise ValueError("Threshold must be between 0 and 1, but got {0} ".format(threshold))
 

@@ -6,7 +6,7 @@
 
 (please add description).
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 from h2o.h2o import (connect, init, api, connection,
                      lazy_import, upload_file, import_file, import_sql_table, import_sql_select,
@@ -35,8 +35,12 @@ __version__ = "0.0.local"
 with open(os.path.join(here, 'version.txt'), encoding='utf-8') as f:
     __version__ = f.read()
 
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 if (__version__.endswith("99999")):
-    print(__buildinfo__)
+    logger.info(__buildinfo__)
 
 __all__ = ("connect", "init", "api", "connection", "upload_file", "lazy_import", "import_file", "import_sql_table",
            "import_sql_select", "parse_setup", "parse_raw", "assign", "deep_copy", "get_model", "get_grid", "get_frame",

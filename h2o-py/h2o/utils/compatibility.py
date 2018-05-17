@@ -5,7 +5,7 @@ Python 2 / 3 compatibility module.
 This module gathers common declarations needed to ensure Python 2 / Python 3 compatibility.
 It has to be imported from all other files, so that the common header looks like this:
 
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
 ------------------------------------------------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ from h2o.utils.compatibility import *  # NOQA
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 from future.utils import PY2, PY3, with_metaclass
 
 __all__ = ("PY2", "PY3", "with_metaclass",  "bytes_iterator",

@@ -10,7 +10,7 @@ Local server.
 :copyright: (c) 2016 H2O.ai
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 
 import atexit
 import os
@@ -25,6 +25,9 @@ from warnings import warn
 from h2o.exceptions import H2OServerError, H2OStartupError, H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, BoundInt, I, is_type
+
+from logging import getLogger
+logger = getLogger(__name__)
 
 __all__ = ("H2OLocalServer", )
 
@@ -116,10 +119,14 @@ class H2OLocalServer(object):
             hs._ice_root = tempfile.mkdtemp()
             hs._tempdir = hs._ice_root
 
-        if verbose: print("Attempting to start a local H2O server...")
+        if verbose: 
+            # TODO: LOGGING verbose differentiation
+            logger.debug("Attempting to start a local H2O server...")
         hs._launch_server(port=port, baseport=baseport, nthreads=int(nthreads), ea=enable_assertions,
                           mmax=max_mem_size, mmin=min_mem_size)
-        if verbose: print("  Server is running at %s://%s:%d" % (hs.scheme, hs.ip, hs.port))
+        if verbose: 
+            # TODO: LOGGING verbose differentiation
+            logger.debug("  Server is running at %s://%s:%d", hs.scheme, hs.ip, hs.port)
         atexit.register(lambda: hs.shutdown())
         return hs
 
@@ -146,7 +153,8 @@ class H2OLocalServer(object):
                 self._process.kill()
                 time.sleep(0.2)
             if self._verbose:
-                print("Local H2O server %s:%s stopped." % (self.ip, self.port))
+                # TODO: LOGGING verbose differentiation
+                logger.debug("Local H2O server %s:%s stopped.", self.ip, self.port)
         except:
             pass
         self._process = None
@@ -250,8 +258,9 @@ class H2OLocalServer(object):
         self._check_java(java, self._verbose)
 
         if self._verbose:
-            print("  Starting server from " + self._jar_path)
-            print("  Ice root: " + self._ice_root)
+            # TODO: LOGGING verbose differentiation
+            logger.debug("  Starting server from " + self._jar_path)
+            logger.debug("  Ice root: " + self._ice_root)
 
         # Combine jar path with the optional extra classpath
         classpath = [self._jar_path] if self._extra_classpath is None else [self._jar_path] + self._extra_classpath
@@ -288,8 +297,9 @@ class H2OLocalServer(object):
         out = open(self._stdout, "w")
         err = open(self._stderr, "w")
         if self._verbose:
-            print("  JVM stdout: " + out.name)
-            print("  JVM stderr: " + err.name)
+            # TODO: LOGGING verbose differentiation
+            logger.debug("  JVM stdout: %s", out.name)
+            logger.debug("  JVM stderr: %s", err.name)
 
         # Launch the process
         win32 = sys.platform == "win32"
@@ -323,7 +333,9 @@ class H2OLocalServer(object):
         jver_bytes = subprocess.check_output([java, "-version"], stderr=subprocess.STDOUT)
         jver = jver_bytes.decode(encoding="utf-8", errors="ignore")
         if verbose:
-            print("  Java Version: " + jver.strip().replace("\n", "; "))
+            # TODO: LOGGING verbose differentiation
+            jver_to_print = jver.strip().replace("\n", "; ")
+            logger.debug("  Java Version: %s", jver_to_print)
         if "GNU libgcj" in jver:
             raise H2OStartupError("Sorry, GNU Java is not supported for H2O.\n"
                                   "Please download the latest 64-bit Java SE JDK from Oracle.")

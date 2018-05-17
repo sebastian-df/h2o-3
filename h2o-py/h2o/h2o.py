@@ -11,7 +11,6 @@ import logging
 import os
 import warnings
 import webbrowser
-import types
 
 
 from h2o.backend import H2OConnection
@@ -46,6 +45,8 @@ from .utils.compatibility import *  # NOQA
 from .utils.compatibility import PY3
 
 logging.basicConfig()
+
+logger = logging.getLogger(__name__)
 
 # An IPython deprecation warning is triggered after h2o.init(). Remove this once the deprecation has been resolved
 warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPython/.*')
@@ -139,8 +140,8 @@ def version_check():
                 "".format(ver_h2o, ver_pkg, branch_name_h2o, build_number_h2o))
     # Check age of the install
     if ci.build_too_old:
-        print("Warning: Your H2O cluster version is too old ({})! Please download and install the latest "
-              "version from http://h2o.ai/download/".format(ci.build_age))
+        logger.warn("Warning: Your H2O cluster version is too old (%s)! Please download and install the latest "
+              "version from http://h2o.ai/download/", ci.build_age)
 
 
 def init(url=None, ip=None, port=None, https=None, insecure=None, username=None, password=None,
@@ -243,7 +244,7 @@ def init(url=None, ip=None, port=None, https=None, insecure=None, username=None,
                 verify_ssl_certificates = not insecure
 
     if not start_h2o:
-        print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
+        logger.warn("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, https=https,
                                      verify_ssl_certificates=verify_ssl_certificates,
@@ -949,7 +950,7 @@ def download_all_logs(dirname=".", filename=None):
     path = os.path.join(dirname, filename)
     response = opener(url).read()
 
-    print("Writing H2O logs to " + path)
+    logger.info("Writing H2O logs to " + path)
     with open(path, "wb") as f:
         f.write(response)
     return path
@@ -1232,7 +1233,7 @@ def demo(funcname, interactive=True, echo=True, test=False):
     if demo_function and type(demo_function) is type(demo):
         demo_function(interactive, echo, test)
     else:
-        print("Demo for %s is not available." % funcname)
+        logger.warn("Demo for %s is not available." % funcname)
 
 
 def load_dataset(relative_path):

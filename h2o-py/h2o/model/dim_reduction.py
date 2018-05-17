@@ -1,5 +1,5 @@
 # -*- encoding: utf-8 -*-
-from __future__ import absolute_import, division, print_function, unicode_literals
+from __future__ import absolute_import, division, unicode_literals
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.compatibility import *  # NOQA
 
@@ -7,6 +7,8 @@ from .model_base import ModelBase
 from .metrics_base import *  # NOQA
 import h2o
 
+from logging import getLogger
+logger = getLogger(__name__)
 
 class H2ODimReductionModel(ModelBase):
     """
@@ -30,7 +32,7 @@ class H2ODimReductionModel(ModelBase):
             else:
                 return vals
         else:
-            print("Warning: This model doesn't have importances of components.")
+            logger.warn("Warning: This model doesn't have importances of components.")
 
     def num_iterations(self):
         """Get the number of iterations that it took to converge or reach max iterations."""
@@ -109,7 +111,7 @@ class H2ODimReductionModel(ModelBase):
             if is_server: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt
         except ImportError:
-            print("matplotlib is required for this function!")
+            logger.error("matplotlib is required for this function!")
             return
 
         variances = [s ** 2 for s in self._model_json['output']['importance'].cell_values[0][1:]]

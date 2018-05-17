@@ -13,7 +13,6 @@ import imp
 import itertools
 import os
 import re
-import sys
 import zipfile
 import io
 import string
@@ -26,6 +25,9 @@ from h2o.exceptions import H2OValueError
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.backend.server import H2OLocalServer
+
+from logging import getLogger
+logger = getLogger(__name__)
 
 _id_ctr = 0
 
@@ -330,8 +332,10 @@ def print2(msg, flush=False, end="\n"):
     function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
     ignores the "bysource" member-order option.
     """
-    print(msg, end=end)
-    if flush: sys.stdout.flush()
+    # TODO: LOGGING shared_utils.print2 - to log or to print?
+#     print(msg, end=end)
+#     if flush: sys.stdout.flush()
+    logger.info(msg)
 
 
 def normalize_slice(s, total):
@@ -426,14 +430,14 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
 
     # Ensure input_csv exists
     if verbose:
-        print("input_csv:\t%s" % input_csv_path)
+        logger.info("input_csv:\t%s" % input_csv_path)
     if not os.path.isfile(input_csv_path):
         raise RuntimeError("Input csv cannot be found at %s" % input_csv_path)
 
     # Ensure mojo_zip exists
     mojo_zip_path = os.path.abspath(mojo_zip_path)
     if verbose:
-        print("mojo_zip:\t%s" % mojo_zip_path)
+        logger.info("mojo_zip:\t%s" % mojo_zip_path)
     if not os.path.isfile(mojo_zip_path):
         raise RuntimeError("MOJO zip cannot be found at %s" % mojo_zip_path)
 
@@ -447,24 +451,24 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     if genmodel_jar_path is None:
         genmodel_jar_path = os.path.join(parent_dir, gen_model_file_name)
     if verbose:
-        print("genmodel_jar:\t%s" % genmodel_jar_path)
+        logger.info("genmodel_jar:\t%s" % genmodel_jar_path)
     if not os.path.isfile(genmodel_jar_path):
         raise RuntimeError("Genmodel jar cannot be found at %s" % genmodel_jar_path)
 
     if verbose and output_csv_path is not None:
-        print("output_csv:\t%s" % output_csv_path)
+        logger.info("output_csv:\t%s" % output_csv_path)
 
     # Set classpath if necessary
     if classpath is None:
         classpath = genmodel_jar_path
     if verbose:
-        print("classpath:\t%s" % classpath)
+        logger.info("classpath:\t%s" % classpath)
 
     # Set java_options if necessary
     if java_options is None:
         java_options = default_java_options
     if verbose:
-        print("java_options:\t%s" % java_options)
+        logger.info("java_options:\t%s" % java_options)
 
     # Construct command to invoke java
     cmd = [java]
@@ -474,7 +478,7 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
             '--output', output_csv_path, '--decimal']
     if verbose:
         cmd_str = " ".join(cmd)
-        print("java cmd:\t%s" % cmd_str)
+        logger.info("java cmd:\t%s" % cmd_str)
 
     # invoke the command
     subprocess.check_call(cmd, shell=False)
@@ -494,9 +498,9 @@ def deprecated(message):
         def decorator_invisible(*args, **kwargs):
             stack = extract_stack()
             assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
-            print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
-            print("    >>> %s" % (stack[-2][3] or "????"))
-            print("        ^^^^ %s" % message)
+            logger.warn("[WARNING] in %s line %d:", stack[-2][0], stack[-2][1])
+            logger.warn("    >>> %s", stack[-2][3] or "????")
+            logger.warn("        ^^^^ %s", message)
             return fun(*args, **kwargs)
 
         decorator_invisible.__doc__ = message

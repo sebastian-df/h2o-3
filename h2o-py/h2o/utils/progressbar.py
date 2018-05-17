@@ -18,6 +18,9 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
+from logging import getLogger
+logger = getLogger(__name__)
+
 
 class ProgressBar(object):
     """
@@ -685,7 +688,7 @@ class PBWBar(ProgressBarFlexibleWidget):
             except UnicodeEncodeError:
                 pass
             except LookupError:
-                print("Warning: unknown encoding %s" % encoding)
+                logger.warn("Warning: unknown encoding %s", encoding)
 
 
 

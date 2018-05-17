@@ -1,11 +1,15 @@
 # -*- encoding: utf-8 -*-
 import h2o
-import os
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, is_type
 from h2o.model.model_base import ModelBase
+
+from logging import getLogger
+
+logger = getLogger(__name__)
+
 
 class H2OAutoML(object):
     """
@@ -85,12 +89,12 @@ class H2OAutoML(object):
         # Check if H2O jar contains AutoML
         try:
             h2o.api("GET /3/Metadata/schemas/AutoMLV99")
-        except h2o.exceptions.H2OResponseError as e:
-            print(e)
-            print("*******************************************************************\n" \
+        except h2o.exceptions.H2OResponseError:
+            msg = "*******************************************************************\n" \
                   "*Please verify that your H2O jar has the proper AutoML extensions.*\n" \
                   "*******************************************************************\n" \
-                  "\nVerbose Error Message:")
+                  "\nVerbose Error Message:"
+            logger.exception(msg)
 
         
         # Make bare minimum build_control (if max_runtimes_secs is an invalid value, it will catch below)
@@ -313,8 +317,7 @@ class H2OAutoML(object):
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
-            print("Exception from the back end: ")
-            print(resp)
+            logger.error("Exception from the back end: \n%s", resp)
             return
 
         self._job = H2OJob(resp['job'], "AutoML")
@@ -345,7 +348,7 @@ class H2OAutoML(object):
         if self._fetch():
             self._model = h2o.get_model(self._leader_id)
             return self._model.predict(test_data)
-        print("No model built yet...")
+        logger.warning("No model built yet...")
 
     #---------------------------------------------------------------------------
     # Download POJO/MOJO with AutoML

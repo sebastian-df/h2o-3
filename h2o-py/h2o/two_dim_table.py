@@ -91,9 +91,10 @@ class H2OTwoDimTable(object):
         #  print pandas.DataFrame(self._cell_values,columns=self._col_header)
         #  return
         if header and self._table_header:
+            # TODO: LOGGING H2OTwoDimTable.show to log or to print?
             print(self._table_header + ":", end=' ')
             if self._table_description: print(self._table_description)
-        print()
+        print() # TODO: LOGGING H2OTwoDimTable.show to log or to print?
         table = copy.deepcopy(self._cell_values)
         nr = 0
         if _is_list_of_lists(table): nr = len(
@@ -106,11 +107,14 @@ class H2OTwoDimTable(object):
             table = trunc_table
 
         H2ODisplay(table, self._col_header, numalign="left", stralign="left")
-        if nr > 20 and can_use_pandas(): print('\nSee the whole table with table.as_data_frame()')
+        if nr > 20 and can_use_pandas():
+            # TODO: LOGGING H2OTwoDimTable.show to log or to print?
+            print('\nSee the whole table with table.as_data_frame()')
 
 
     def __repr__(self):
         # FIXME: should return a string rather than printing it
+        # TODO: LOGGING I totally aggree ^^
         self.show()
         return ""
 

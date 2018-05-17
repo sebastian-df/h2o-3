@@ -6,7 +6,7 @@ This module provides helper functions to write code that is backward-compatible.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
-from __future__ import division, print_function, absolute_import
+from __future__ import division, absolute_import
 from h2o.utils.compatibility import *  # NOQA
 
 
@@ -33,7 +33,6 @@ class BackwardsCompatibleMeta(type):
         bcsm = dct.pop("_bcsm") if "_bcsm" in dct else {}
         bcim = dct.pop("_bcim") if "_bcim" in dct else {}
         bca = set(bcsv) | set(bcsm) | set(bcim)  # Set of all "special" static names
-        #print("Creating class %s with dict %r" % (clsname, dct))
         dct["_bc"] = {"sv": bcsv, "sm": bcsm, "im": bcim, "a": bca}
         return super(BackwardsCompatibleMeta, mcs).__new__(mcs, clsname, bases, dct)
 
@@ -41,17 +40,14 @@ class BackwardsCompatibleMeta(type):
         bc = type.__getattribute__(cls, "_bc")
         if name in bc["a"]:
             if name in bc["sv"]:
-                # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sv"][name]
             if name in bc["sm"]:
-                # print("Warning: Method %s in class %s is deprecated." % (name, cls.__name__))
                 return bc["sm"][name]
         return type.__getattribute__(cls, name)
 
     def __setattr__(cls, name, value):
         bc = cls.__dict__["_bc"]
         if name in bc["sv"]:
-            # print("Warning: Symbol %s in class %s is deprecated." % (name, cls.__name__))
             bc["sv"][name] = value
         else:
             cls.__dict__[name] = value
@@ -68,7 +64,6 @@ class BackwardsCompatibleBase(object):
 
     def __getattr__(self, item):
         if item in self._bcin:
-            # print("Warning: Method %s in class %s is deprecated." % (item, self.__class__.__name__))
             return self._bcin[item]
         # Make sure that we look up any names not found on the instance also in the class
         return getattr(self.__class__, item)

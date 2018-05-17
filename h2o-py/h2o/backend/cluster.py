@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """Information about the backend H2O cluster."""
-from __future__ import division, print_function, absolute_import, unicode_literals
+from __future__ import division, absolute_import, unicode_literals
 
 import sys
 import time
