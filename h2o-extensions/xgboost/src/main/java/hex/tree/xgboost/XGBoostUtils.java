@@ -191,7 +191,7 @@ public class XGBoostUtils {
 
         @Override
         protected void map(final int tid) {
-            final Chunk chunk = _weightsVector.chunkForChunkIdx(tid);
+            final Chunk chunk = _weightsVector.chunkForChunkIdx(_localChunkIDs[tid]);
 
             _chunkLen = chunk._len;
             // First element can not be iterated by c.nextNz method
